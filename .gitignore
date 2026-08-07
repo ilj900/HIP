@@ -1,0 +1,10 @@
+*
+!*.cpp
+!*.hip
+!*.h
+!*.hpp
+!*.c
+!CMakeLists.txt
+!*.cmake
+!*.md
+!.gitignore
