@@ -1,3 +1,3 @@
 #pragma once
 
-int vector_add();
+bool vector_add();

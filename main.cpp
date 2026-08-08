@@ -1,13 +1,7 @@
-#include "vector_add.h"
+#include "gtest/gtest.h"
 
-#include <print>
-#include <vector>
-
-int main()
+int main(int argc, char** argv)
 {
-    bool b = false;
-    b = true;
-    std::vector<float> vals;
-    return vector_add();
-
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }
