@@ -1,13 +1,19 @@
 #pragma once
 
+#include "hip_utils.h"
 #include <cstdint>
 #include <vector>
 
 struct FMatrix
 {
-    FMatrix(uint32_t MIn, uint32_t KIn, float Min = -20, float Max = 20, uint32_t Seed = 0);
+    explicit FMatrix(uint32_t MIn, uint32_t KIn, bool Empty);
+    FMatrix(uint32_t MIn, uint32_t KIn, uint32_t Seed = 0, float Min = -20, float Max = 20);
     void Print();
     bool operator==(const FMatrix&) const;
+    uint32_t Size() const;
+    uint32_t SizeB() const;
+    FDeviceMemory<> ToDevice() const;
+    void* data();
 
     uint32_t M;
     uint32_t K;

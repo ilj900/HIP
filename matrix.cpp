@@ -3,7 +3,12 @@
 
 #include "matrix.h"
 
-FMatrix::FMatrix(uint32_t MIn, uint32_t KIn, float Min, float Max, uint32_t Seed) : M (MIn), K (KIn), Data(M * K)
+FMatrix::FMatrix(uint32_t MIn, uint32_t KIn, bool Empty)
+    : M (MIn), K (KIn), Data(M * K)
+{}
+
+FMatrix::FMatrix(uint32_t MIn, uint32_t KIn,  uint32_t Seed, float Min, float Max)
+    : M (MIn), K (KIn), Data(M * K)
 {
     std::mt19937 Engine{Seed};
     std::uniform_real_distribution Dist(Min, Max);
@@ -40,5 +45,27 @@ bool FMatrix::operator==(const FMatrix& Other) const
         }
     }
     return true;
+}
+
+uint32_t FMatrix::Size() const
+{
+    return Data.size();
+}
+
+uint32_t FMatrix::SizeB() const
+{
+    return Data.size() * sizeof(float);
+}
+
+FDeviceMemory<> FMatrix::ToDevice() const
+{
+    FDeviceMemory<> Memory(Data.size() * sizeof(float));
+    Memory.ToDevice(Data.data(), SizeB());
+    return Memory;
+}
+
+void* FMatrix::data()
+{
+    return Data.data();
 }
 
