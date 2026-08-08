@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.21)
-project(MyProject LANGUAGES CXX HIP)      # <- drop HIP from LANGUAGES
+project(HIP_Playground LANGUAGES CXX HIP)
 
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(my_app
-        vector_add.hip                # clang treats .hip as HIP source automatically
+        vector_add.hip
         vector_add.h
         main.cpp)
 
