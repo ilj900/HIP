@@ -47,6 +47,38 @@ bool FMatrix::operator==(const FMatrix& Other) const
     return true;
 }
 
+float FMatrix::AbsDiff(const FMatrix& Other) const
+{
+    float Diff = 0.f;
+    for (uint32_t i = 0; i < M; ++i)
+    {
+        for (uint32_t j = 0; j < K; ++j)
+        {
+            uint32_t Index = i * K + j;
+            Diff += std::abs(Other.Data[Index] - Data[Index]);
+        }
+    }
+
+    return Diff;
+}
+
+float FMatrix::RelDiff(const FMatrix& Other) const
+{
+    float Diff = 0.f;
+    float Sum = 0.f;
+    for (uint32_t i = 0; i < M; ++i)
+    {
+        for (uint32_t j = 0; j < K; ++j)
+        {
+            uint32_t Index = i * K + j;
+            Diff += std::abs(Other.Data[Index] - Data[Index]);
+            Sum += std::abs(Data[Index]);
+        }
+    }
+
+    return Diff / Sum;
+}
+
 uint32_t FMatrix::Size() const
 {
     return Data.size();
@@ -59,7 +91,7 @@ uint32_t FMatrix::SizeB() const
 
 FDeviceMemory<> FMatrix::ToDevice() const
 {
-    FDeviceMemory<> Memory(Data.size() * sizeof(float));
+    FDeviceMemory<> Memory(Data.size());
     Memory.ToDevice(Data.data(), SizeB());
     return Memory;
 }

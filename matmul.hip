@@ -22,7 +22,7 @@ __global__ void matmul1d(const float* A, const float* B, float* C, uint M, uint 
     for (int i = 0; i < K; ++i)
     {
         float L = A[Row * K + i];
-        float R = B[Col + (K * i)];
+        float R = B[Col + (N * i)];
         Acc += L * R;
     }
     C[I] = Acc;
@@ -40,5 +40,5 @@ void MatMul1D(const FMatrix &A, const FMatrix &B, FMatrix &C, uint32_t BlockSize
     matmul1d<<<(C.Size() + BlockSize - 1) / BlockSize, BlockSize>>>(HipA.Data, HipB.Data, HipC.Data, M, N, K);
     hipDeviceSynchronize();
 
-    HipC.FromDevice(C.data(), C.Size());
+    HipC.FromDevice(C.data(), C.SizeB());
 }
