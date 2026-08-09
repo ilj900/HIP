@@ -31,6 +31,29 @@ void FMatrix::Print()
     }
 }
 
+void FMatrix::PrintWolfram()
+{
+    std::print("{{");
+    for (uint32_t i = 0; i < M; ++i)
+    {
+        if (i > 0)
+        {
+            std::print(", ");
+        }
+        std::print("{{");
+        for (uint32_t j = 0; j < K; ++j)
+        {
+            if (j > 0)
+            {
+                std::print(", ");
+            }
+            std::print("{:.9g}", Data[i * K + j]);
+        }
+        std::print("}}");
+    }
+    std::println("}}");
+}
+
 bool FMatrix::operator==(const FMatrix& Other) const
 {
     for (uint32_t i = 0; i < M; ++i)

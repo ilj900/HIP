@@ -9,6 +9,7 @@ struct FMatrix
     explicit FMatrix(uint32_t MIn, uint32_t KIn, bool Empty);
     FMatrix(uint32_t MIn, uint32_t KIn, uint32_t Seed = 0, float Min = -20, float Max = 20);
     void Print();
+    void PrintWolfram();
     bool operator==(const FMatrix& Other) const;
     float AbsDiff(const FMatrix& Other) const;
     float RelDiff(const FMatrix& Other) const;
