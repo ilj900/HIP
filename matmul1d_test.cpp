@@ -10,10 +10,14 @@ struct Shape
     uint32_t M;
     uint32_t N;
     uint32_t K;
+    constexpr std::string ToString()
+    {
+        return std::format("M{}_N{}_K{}", M, N, K);
+    }
 };
 
 // M x K x N
-constexpr std::array Shapes =
+constexpr std::array ValidationShapes =
 {
     Shape{1, 1, 1},
     Shape{4, 4, 4},
@@ -32,9 +36,23 @@ constexpr std::array Shapes =
     Shape{256, 1, 1},
 };
 
+constexpr std::array BenchShapes =
+{
+    Shape{256, 256, 256},
+    Shape{1024, 1024, 1024},
+    Shape{4096, 4096, 4096},
+    Shape{10000, 10000, 10000},
+    Shape{8192, 128, 8192},
+    Shape{128, 8192, 128},
+    Shape{1, 4096, 4096},
+    Shape{8, 4096, 4096},
+    Shape{32, 4096, 4096},
+};
 
+class MatmulVerificator : public ::testing::TestWithParam<Shape>
+{};
 
-class BasicMatmulVerificator : public ::testing::TestWithParam<Shape>
+class Matmul1DBench : public ::testing::TestWithParam<Shape>
 {};
 
 TEST(matmul, ReturnsSuccess)
@@ -63,7 +81,7 @@ TEST(Sanity, MatGen)
     A.Print();
 }
 
-TEST_P(BasicMatmulVerificator, TestCorrectness)
+TEST_P(Matmul1DBench, Bench1D)
 {
     auto Shape = GetParam();
 
@@ -71,7 +89,32 @@ TEST_P(BasicMatmulVerificator, TestCorrectness)
     auto& N = Shape.N;
     auto& K = Shape.K;
 
-    std::println("M{}_N{}_K{}", M, N, K);
+    std::println("Bench 1D: M{}_N{}_K{}", M, N, K);
+
+    FMatrix A(M, K);
+    FMatrix B(K, N);
+    FMatrix C(M, N, true);
+
+    uint32_t Runs = 10;
+    std::vector<float> Values(Runs);
+    for (int i = 0; i < Runs; ++i)
+    {
+        Values[i] = MatMul1D(A, B, C, 256);
+    }
+
+    //SaveTimings(Values, "Bench1D" + Shape.ToString() + ".dat");
+    std::println("{}ms", Values.back());
+}
+
+TEST_P(MatmulVerificator, TestCorrectness)
+{
+    auto Shape = GetParam();
+
+    auto& M = Shape.M;
+    auto& N = Shape.N;
+    auto& K = Shape.K;
+
+    std::println("Validation: M{}_N{}_K{}", M, N, K);
 
     FMatrix A(M, K);
     FMatrix B(K, N);
@@ -84,9 +127,16 @@ TEST_P(BasicMatmulVerificator, TestCorrectness)
     ASSERT_LE(C.RelDiff(D), 1e-6);
 }
 
-INSTANTIATE_TEST_SUITE_P(BasicTest, BasicMatmulVerificator, ::testing::ValuesIn(Shapes),
+INSTANTIATE_TEST_SUITE_P(VerificationTest, MatmulVerificator, ::testing::ValuesIn(ValidationShapes),
     [](const ::testing::TestParamInfo<Shape>& Info)
 {
         const auto& S = Info.param;
-        return std::format("M{}_N{}_K{}", S.M, S.N, S.K);
+        return std::format("Validation_M{}_N{}_K{}", S.M, S.N, S.K);
+});
+
+INSTANTIATE_TEST_SUITE_P(Bench1DTest, Matmul1DBench, ::testing::ValuesIn(BenchShapes),
+    [](const ::testing::TestParamInfo<Shape>& Info)
+{
+        const auto& S = Info.param;
+        return std::format("Bench1D_M{}_N{}_K{}", S.M, S.N, S.K);
 });

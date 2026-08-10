@@ -57,3 +57,18 @@ struct FDeviceMemory
 
     T* Data = nullptr;
 };
+
+struct FHipTimer
+{
+    FHipTimer();
+    ~FHipTimer();
+
+    FHipTimer(const FHipTimer&) = delete;
+    FHipTimer& operator=(const FHipTimer&) = delete;
+
+    void Start();
+    float Stop();
+
+    void* StartEvent = nullptr;
+    void* StopEvent = nullptr;
+};

@@ -28,7 +28,7 @@ __global__ void matmul1d(const float* A, const float* B, float* C, uint M, uint 
     C[I] = Acc;
 }
 
-void MatMul1D(const FMatrix &A, const FMatrix &B, FMatrix &C, uint32_t BlockSize)
+float MatMul1D(const FMatrix &A, const FMatrix &B, FMatrix &C, uint32_t BlockSize)
 {
     auto HipA = A.ToDevice();
     auto HipB = B.ToDevice();
@@ -37,8 +37,11 @@ void MatMul1D(const FMatrix &A, const FMatrix &B, FMatrix &C, uint32_t BlockSize
     uint32_t N = C.K;
     uint32_t K = A.K;
 
+    FHipTimer Timer;
+    Timer.Start();
     matmul1d<<<(C.Size() + BlockSize - 1) / BlockSize, BlockSize>>>(HipA.Data, HipB.Data, HipC.Data, M, N, K);
-    hipDeviceSynchronize();
+    auto Ms = Timer.Stop();
 
     HipC.FromDevice(C.data(), C.SizeB());
+    return Ms;
 }

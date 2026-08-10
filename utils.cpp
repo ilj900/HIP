@@ -1,5 +1,8 @@
 #include "utils.h"
 
+#include <fstream>
+#include <cstdint>
+
 FMatrix CPUMatMul(const FMatrix& A, const FMatrix& B)
 {
     if (A.K != B.M)
@@ -29,4 +32,27 @@ FMatrix CPUMatMul(const FMatrix& A, const FMatrix& B)
     }
 
     return C;
+}
+
+void SaveTimings(const std::vector<float>& Tmings, const std::string& Filename)
+{
+    std::ofstream Out(Filename, std::ios::binary | std::ios::trunc);
+    if (!Out) {
+        throw std::runtime_error("saveTimings: failed to open '" + Filename + "' for writing");
+    }
+
+    static const char magic[4] = {'T', 'I', 'M', '1'};
+    Out.write(magic, sizeof(magic));
+
+    const uint32_t Count = static_cast<uint32_t>(Tmings.size());
+    Out.write(reinterpret_cast<const char*>(&Count), sizeof(Count));
+
+    if (Count > 0)
+    {
+        Out.write(reinterpret_cast<const char*>(Tmings.data()), static_cast<std::streamsize>(Count) * sizeof(float));
+    }
+
+    if (!Out) {
+        throw std::runtime_error("saveTimings: write failed for '" + Filename + "'");
+    }
 }
