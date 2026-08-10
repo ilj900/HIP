@@ -49,11 +49,28 @@ constexpr std::array BenchShapes =
     Shape{32, 4096, 4096},
 };
 
+constexpr std::array BlockSizes1D =
+{
+    64u,
+    127u,
+    128u,
+    129u,
+    255u,
+    256u,
+    257u,
+    1024u
+};
+
 class MatmulVerificator : public ::testing::TestWithParam<Shape>
 {};
 
-class Matmul1DBench : public ::testing::TestWithParam<Shape>
+class Matmul1DBench : public ::testing::TestWithParam<std::tuple<Shape, uint32_t>>
 {};
+
+std::string GetName1D(uint32_t M, uint32_t N, uint32_t K, uint32_t BlockSize)
+{
+    return std::format("GroupSize_{}_{}x{}x{}", BlockSize, M, N, K);
+}
 
 TEST(matmul, ReturnsSuccess)
 {
@@ -83,27 +100,27 @@ TEST(Sanity, MatGen)
 
 TEST_P(Matmul1DBench, Bench1D)
 {
-    auto Shape = GetParam();
+    auto [Shape, BlockSize] = GetParam();
 
     auto& M = Shape.M;
     auto& N = Shape.N;
     auto& K = Shape.K;
 
-    std::println("Bench 1D: M{}_N{}_K{}", M, N, K);
+    std::println("Bench 1D: {}", GetName1D(M, N, K, BlockSize));
 
     FMatrix A(M, K);
     FMatrix B(K, N);
     FMatrix C(M, N, true);
 
-    uint32_t Runs = 10;
+    uint32_t Runs = 2;
     std::vector<float> Values(Runs);
     for (int i = 0; i < Runs; ++i)
     {
-        Values[i] = MatMul1D(A, B, C, 256);
+        Values[i] = MatMul1D(A, B, C, BlockSize);
     }
 
     //SaveTimings(Values, "Bench1D" + Shape.ToString() + ".dat");
-    std::println("{}ms", Values.back());
+    std::println("{}ms\n", Values.back());
 }
 
 TEST_P(MatmulVerificator, TestCorrectness)
@@ -114,7 +131,7 @@ TEST_P(MatmulVerificator, TestCorrectness)
     auto& N = Shape.N;
     auto& K = Shape.K;
 
-    std::println("Validation: M{}_N{}_K{}", M, N, K);
+    std::println("Validation: {}", GetName1D(M, N, K, 256));
 
     FMatrix A(M, K);
     FMatrix B(K, N);
@@ -134,9 +151,10 @@ INSTANTIATE_TEST_SUITE_P(VerificationTest, MatmulVerificator, ::testing::ValuesI
         return std::format("Validation_M{}_N{}_K{}", S.M, S.N, S.K);
 });
 
-INSTANTIATE_TEST_SUITE_P(Bench1DTest, Matmul1DBench, ::testing::ValuesIn(BenchShapes),
-    [](const ::testing::TestParamInfo<Shape>& Info)
+INSTANTIATE_TEST_SUITE_P(Bench1DTest, Matmul1DBench, ::testing::Combine(::testing::ValuesIn(BenchShapes), ::testing::ValuesIn(BlockSizes1D)),
+    [](const ::testing::TestParamInfo<std::tuple<Shape, uint32_t>>& Info)
 {
-        const auto& S = Info.param;
-        return std::format("Bench1D_M{}_N{}_K{}", S.M, S.N, S.K);
+        const auto& S = std::get<0>(Info.param);
+        const auto  B = std::get<1>(Info.param);
+        return std::format("Bench1D_M{}_N{}_K{}_B{}", S.M, S.N, S.K, B);
 });
