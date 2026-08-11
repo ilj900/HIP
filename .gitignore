@@ -7,5 +7,7 @@
 !CMakeLists.txt
 !cmake/
 !cmake/*.cmake
+!bench_data/
+!*.py
 !*.md
 !.gitignore
