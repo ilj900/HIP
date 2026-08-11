@@ -5,71 +5,67 @@
 #include "utils.h"
 #include <array>
 
-struct Shape
+std::filesystem::path BenchPath = "bench_data";
+
+struct FShape
 {
     uint32_t M;
     uint32_t N;
     uint32_t K;
-    constexpr std::string ToString()
-    {
-        return std::format("M{}_N{}_K{}", M, N, K);
-    }
 };
 
 // M x K x N
 constexpr std::array ValidationShapes =
 {
-    Shape{1, 1, 1},
-    Shape{4, 4, 4},
-    Shape(13, 17, 19),
-    Shape(251, 251, 251),
-    Shape{512, 4, 4},
-    Shape{4, 4, 512},
-    Shape{4, 512, 4},
-    Shape(257, 256, 256),
-    Shape(256, 257, 256),
-    Shape(256, 256, 257),
-    Shape{1, 256, 256},
-    Shape{256, 256, 1},
-    Shape{256, 1, 256},
-    Shape{1, 1, 256},
-    Shape{256, 1, 1},
+    FShape{1, 1, 1},
+    FShape{4, 4, 4},
+    FShape(13, 17, 19),
+    FShape(251, 251, 251),
+    FShape{512, 4, 4},
+    FShape{4, 4, 512},
+    FShape{4, 512, 4},
+    FShape(257, 256, 256),
+    FShape(256, 257, 256),
+    FShape(256, 256, 257),
+    FShape{1, 256, 256},
+    FShape{256, 256, 1},
+    FShape{256, 1, 256},
+    FShape{1, 1, 256},
+    FShape{256, 1, 1},
 };
 
 constexpr std::array BenchShapes =
 {
-    Shape{256, 256, 256},
-    Shape{1024, 1024, 1024},
-    Shape{4096, 4096, 4096},
-    Shape{10000, 10000, 10000},
-    Shape{8192, 128, 8192},
-    Shape{128, 8192, 128},
-    Shape{1, 4096, 4096},
-    Shape{8, 4096, 4096},
-    Shape{32, 4096, 4096},
+    FShape{256, 256, 256},
+    FShape{1024, 1024, 1024},
+    FShape{4096, 4096, 4096},
+    FShape{10000, 10000, 10000},
+    FShape{8192, 128, 8192},
+    FShape{128, 8192, 128},
+    FShape{1, 4096, 4096},
+    FShape{8, 4096, 4096},
+    FShape{32, 4096, 4096},
 };
 
 constexpr std::array BlockSizes1D =
 {
     64u,
-    127u,
     128u,
-    129u,
     255u,
     256u,
     257u,
     1024u
 };
 
-class MatmulVerificator : public ::testing::TestWithParam<Shape>
+class MatmulVerificator : public ::testing::TestWithParam<FShape>
 {};
 
-class Matmul1DBench : public ::testing::TestWithParam<std::tuple<Shape, uint32_t>>
+class Matmul1DBench : public ::testing::TestWithParam<std::tuple<FShape, uint32_t>>
 {};
 
-std::string GetName1D(uint32_t M, uint32_t N, uint32_t K, uint32_t BlockSize)
+std::string GetName1D(const FShape& Shape, uint32_t BlockSize)
 {
-    return std::format("GroupSize_{}_{}x{}x{}", BlockSize, M, N, K);
+    return std::format("GroupSize_{}_{}x{}x{}", BlockSize, Shape.M, Shape.N, Shape.K);
 }
 
 TEST(matmul, ReturnsSuccess)
@@ -105,21 +101,22 @@ TEST_P(Matmul1DBench, Bench1D)
     auto& M = Shape.M;
     auto& N = Shape.N;
     auto& K = Shape.K;
+    auto Name = GetName1D(Shape, BlockSize);
 
-    std::println("Bench 1D: {}", GetName1D(M, N, K, BlockSize));
+    std::println("Bench 1D: {}", Name);
 
     FMatrix A(M, K);
     FMatrix B(K, N);
     FMatrix C(M, N, true);
 
-    uint32_t Runs = 2;
+    uint32_t Runs = 5;
     std::vector<float> Values(Runs);
     for (int i = 0; i < Runs; ++i)
     {
         Values[i] = MatMul1D(A, B, C, BlockSize);
     }
 
-    //SaveTimings(Values, "Bench1D" + Shape.ToString() + ".dat");
+    SaveTimings(Values, BenchPath / ("Bench1D" + Name + ".dat"));
     std::println("{}ms\n", Values.back());
 }
 
@@ -131,7 +128,7 @@ TEST_P(MatmulVerificator, TestCorrectness)
     auto& N = Shape.N;
     auto& K = Shape.K;
 
-    std::println("Validation: {}", GetName1D(M, N, K, 256));
+    std::println("Validation: {}", GetName1D(Shape, 256));
 
     FMatrix A(M, K);
     FMatrix B(K, N);
@@ -145,16 +142,16 @@ TEST_P(MatmulVerificator, TestCorrectness)
 }
 
 INSTANTIATE_TEST_SUITE_P(VerificationTest, MatmulVerificator, ::testing::ValuesIn(ValidationShapes),
-    [](const ::testing::TestParamInfo<Shape>& Info)
+    [](const ::testing::TestParamInfo<FShape>& Info)
 {
         const auto& S = Info.param;
-        return std::format("Validation_M{}_N{}_K{}", S.M, S.N, S.K);
+        return std::format("Validation_K{}", GetName1D(S, 256));
 });
 
 INSTANTIATE_TEST_SUITE_P(Bench1DTest, Matmul1DBench, ::testing::Combine(::testing::ValuesIn(BenchShapes), ::testing::ValuesIn(BlockSizes1D)),
-    [](const ::testing::TestParamInfo<std::tuple<Shape, uint32_t>>& Info)
+    [](const ::testing::TestParamInfo<std::tuple<FShape, uint32_t>>& Info)
 {
         const auto& S = std::get<0>(Info.param);
         const auto  B = std::get<1>(Info.param);
-        return std::format("Bench1D_M{}_N{}_K{}_B{}", S.M, S.N, S.K, B);
+        return std::format("Bench1D_{}", GetName1D(S, B));
 });

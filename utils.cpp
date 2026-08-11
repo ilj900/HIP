@@ -34,11 +34,11 @@ FMatrix CPUMatMul(const FMatrix& A, const FMatrix& B)
     return C;
 }
 
-void SaveTimings(const std::vector<float>& Tmings, const std::string& Filename)
+void SaveTimings(const std::vector<float>& Tmings, const std::filesystem::path& Filename)
 {
     std::ofstream Out(Filename, std::ios::binary | std::ios::trunc);
     if (!Out) {
-        throw std::runtime_error("saveTimings: failed to open '" + Filename + "' for writing");
+        throw std::runtime_error("saveTimings: failed to open '" + Filename.string() + "' for writing");
     }
 
     static const char magic[4] = {'T', 'I', 'M', '1'};
@@ -53,6 +53,6 @@ void SaveTimings(const std::vector<float>& Tmings, const std::string& Filename)
     }
 
     if (!Out) {
-        throw std::runtime_error("saveTimings: write failed for '" + Filename + "'");
+        throw std::runtime_error("saveTimings: write failed for '" + Filename.string() + "'");
     }
 }
