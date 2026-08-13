@@ -4,9 +4,10 @@
 
 #include "matrix.h"
 
-FMatrix::FMatrix(uint32_t MIn, uint32_t KIn, bool Empty)
-    : M (MIn), K (KIn), Data(M * K)
-{}
+FMatrix FMatrix::Zeros(uint32_t M, uint32_t K)
+{
+    return FMatrix(M, K, FZeroTag{});
+}
 
 FMatrix::FMatrix(uint32_t MIn, uint32_t KIn,  uint32_t Seed, float Min, float Max)
     : M (MIn), K (KIn), Data(M * K)
@@ -104,7 +105,7 @@ FDeviceMemory<> FMatrix::ToDevice() const
     return Memory;
 }
 
-FDeviceMemory<> FMatrix::AllocateGMem() const
+FDeviceMemory<> FMatrix::AllocateDevice() const
 {
     FDeviceMemory Memory(Data.size());
     return Memory;

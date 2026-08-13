@@ -14,7 +14,7 @@ FMatrix CPUMatMul(const FMatrix& A, const FMatrix& B)
     uint32_t N = B.K;
     uint32_t K = A.K;
 
-    FMatrix C(M, N, true);
+    FMatrix C = FMatrix::Zeros(M, N);
 
     for (uint32_t i = 0; i < M; ++i)
     {
@@ -34,7 +34,7 @@ FMatrix CPUMatMul(const FMatrix& A, const FMatrix& B)
     return C;
 }
 
-void SaveTimings(const std::vector<float>& Tmings, const std::filesystem::path& Filename)
+void SaveTimings(const std::vector<float>& Timings, const std::filesystem::path& Filename)
 {
     std::ofstream Out(Filename, std::ios::binary | std::ios::trunc);
     if (!Out) {
@@ -44,12 +44,12 @@ void SaveTimings(const std::vector<float>& Tmings, const std::filesystem::path& 
     static const char magic[4] = {'T', 'I', 'M', '1'};
     Out.write(magic, sizeof(magic));
 
-    const uint32_t Count = static_cast<uint32_t>(Tmings.size());
+    const uint32_t Count = static_cast<uint32_t>(Timings.size());
     Out.write(reinterpret_cast<const char*>(&Count), sizeof(Count));
 
     if (Count > 0)
     {
-        Out.write(reinterpret_cast<const char*>(Tmings.data()), static_cast<std::streamsize>(Count) * sizeof(float));
+        Out.write(reinterpret_cast<const char*>(Timings.data()), static_cast<std::streamsize>(Count) * sizeof(float));
     }
 
     if (!Out) {

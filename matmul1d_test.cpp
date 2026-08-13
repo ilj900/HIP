@@ -68,7 +68,7 @@ TEST(matmul, SmokeTest)
 {
     FMatrix A(13, 17);
     FMatrix B(17, 19, 1u);
-    FMatrix C(13, 19, true);
+    FMatrix C = FMatrix::Zeros(13, 19);   // line 71
     MatMul1D(A, B, C, 16);
     auto D = CPUMatMul(A, B);
     std::println("AbsDiff: {}", C.AbsDiff(D));
@@ -108,7 +108,7 @@ TEST_P(Matmul1DSanity, Sanity)
 
     FMatrix A(M, K);
     FMatrix B(K, N);
-    FMatrix C(M, N, true);
+    FMatrix C = FMatrix::Zeros(M, N);
     MatMul1D(A, B, C, BlockSize);
     auto D = CPUMatMul(A, B);
     std::println("AbsDiff: {}", C.AbsDiff(D));

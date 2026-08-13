@@ -32,7 +32,7 @@ float MatMul1D(const FMatrix &A, const FMatrix &B, FMatrix &C, uint32_t BlockSiz
 {
     auto HipA = A.ToDevice();
     auto HipB = B.ToDevice();
-    auto HipC = C.AllocateGMem();
+    auto HipC = C.AllocateDevice();
     uint32_t M = C.M;
     uint32_t N = C.K;
     uint32_t K = A.K;

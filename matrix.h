@@ -6,7 +6,8 @@
 
 struct FMatrix
 {
-    explicit FMatrix(uint32_t MIn, uint32_t KIn, bool Empty);
+    static FMatrix Zeros(uint32_t M, uint32_t K);
+
     FMatrix(uint32_t MIn, uint32_t KIn, uint32_t Seed = 0, float Min = -20, float Max = 20);
     void Print() const;
     void PrintWolfram() const;
@@ -16,10 +17,14 @@ struct FMatrix
     uint32_t Size() const;
     uint32_t SizeB() const;
     FDeviceMemory<> ToDevice() const;
-    FDeviceMemory<> AllocateGMem() const;
+    FDeviceMemory<> AllocateDevice() const;
     void* GetData();
 
     uint32_t M;
     uint32_t K;
     std::vector<float> Data;
+
+private:
+    struct FZeroTag {};
+    FMatrix(uint32_t MIn, uint32_t KIn, FZeroTag) : M(MIn), K(KIn), Data(M * K) {}
 };
