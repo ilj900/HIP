@@ -140,6 +140,7 @@ class TimingGUI:
             ax.set_xlabel("sample index")
             ax.set_ylabel("timing")
             ax.set_title(f"{len(names)} file(s) combined")
+            ax.set_ylim(bottom=0)
             ax.legend(fontsize=7)
             ax.grid(True, alpha=0.3)
         else:
@@ -152,6 +153,7 @@ class TimingGUI:
                 ax.set_title(name, fontsize=9)
                 ax.set_ylabel("timing")
                 ax.grid(True, alpha=0.3)
+                ax.set_ylim(bottom=0)
                 if idx == n - 1:
                     ax.set_xlabel("sample index")
             if hidden:
