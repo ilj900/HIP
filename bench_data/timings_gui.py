@@ -3,7 +3,6 @@ import struct
 import sys
 import tkinter as tk
 from tkinter import ttk
-import tkinter.font as tkfont
 
 import numpy as np
 from matplotlib.figure import Figure
@@ -13,8 +12,9 @@ from matplotlib.backends.backend_tkagg import (
 )
 
 MAGIC = b"TIM1"
-BASE_DPI = 100
-BASE_PER_PLOT_PX = 240     # height budget for each stacked subplot (unscaled)
+WIN_W = 1920          # fixed window width  (px)
+WIN_H = 1080           # fixed window height (px)
+MAX_PLOTS = 5         # cap on simultaneously drawn subplots
 
 
 # --------------------------------------------------------------------------- #
@@ -31,50 +31,23 @@ def load_timings(path):
             raise ValueError(f"truncated: expected {count} floats, got {data.size}")
     return data
 
-def detect_scale():
-    """UI scale factor. XWayland hides the real display scale, so we take it
-    from an env var (Hyprland users can export GDK_SCALE) or a --scale flag."""
-    for var in ("TIMING_GUI_SCALE", "GDK_SCALE", "QT_SCALE_FACTOR"):
-        val = os.environ.get(var)
-        if val:
-            try:
-                return max(0.5, float(val))
-            except ValueError:
-                pass
-    return 1.0
-
-
-def apply_widget_scaling(root, scale):
-    """Scale Tk widget fonts. Negative size = absolute pixels, so the result
-    is deterministic regardless of what DPI XWayland reports."""
-    base_px = 13
-    for name in ("TkDefaultFont", "TkTextFont", "TkFixedFont",
-                 "TkMenuFont", "TkHeadingFont", "TkTooltipFont", "TkIconFont"):
-        try:
-            tkfont.nametofont(name).configure(size=-int(round(base_px * scale)))
-        except tk.TclError:
-            pass
-
-# --------------------------------------------------------------------------- #
-# GUI
-# --------------------------------------------------------------------------- #
+    # --------------------------------------------------------------------------- #
+    # GUI
+    # --------------------------------------------------------------------------- #
 class TimingGUI:
-    def __init__(self, root, folder, scale=1.0):
+    def __init__(self, root, folder):
         self.root = root
         self.folder = folder
-        self.scale = scale
-        self.dpi = BASE_DPI * scale
-        self.per_plot_px = int(BASE_PER_PLOT_PX * scale)
         self.files = []                       # list of filenames (basename)
-        self._resize_job = None
 
         root.title(f"Timing viewer — {folder}")
-        root.geometry(f"{int(1100 * scale)}x{int(700 * scale)}")
+        root.geometry(f"{WIN_W}x{WIN_H}")
+        root.resizable(False, False)          # fixed-size window
 
         paned = ttk.PanedWindow(root, orient=tk.HORIZONTAL)
         paned.pack(fill=tk.BOTH, expand=True)
 
-    # ---- left: file list ------------------------------------------------
+        # ---- left: file list ------------------------------------------------
         left = ttk.Frame(paned, padding=4)
         paned.add(left, weight=0)
 
@@ -85,7 +58,7 @@ class TimingGUI:
         sb = ttk.Scrollbar(list_frame, orient=tk.VERTICAL)
         self.listbox = tk.Listbox(
             list_frame, selectmode=tk.EXTENDED, exportselection=False,
-            width=40, activestyle="none", yscrollcommand=sb.set,
+            width=36, activestyle="none", yscrollcommand=sb.set,
         )
         sb.config(command=self.listbox.yview)
         sb.pack(side=tk.RIGHT, fill=tk.Y)
@@ -105,36 +78,25 @@ class TimingGUI:
         ttk.Button(btns, text="Select all", command=self.select_all).pack(
             side=tk.LEFT, expand=True, fill=tk.X)
 
-        # ---- right: scrollable embedded figure ------------------------------
+        # ---- right: single embedded figure that fills the fixed pane --------
         right = ttk.Frame(paned)
         paned.add(right, weight=1)
 
-        self.fig = Figure(dpi=self.dpi)
-        self.scroll_canvas = tk.Canvas(right, highlightthickness=0)
-        vbar = ttk.Scrollbar(right, orient=tk.VERTICAL,
-                             command=self.scroll_canvas.yview)
-        self.scroll_canvas.configure(yscrollcommand=vbar.set)
-
-        self.mpl_canvas = FigureCanvasTkAgg(self.fig, master=self.scroll_canvas)
-        self.mpl_widget = self.mpl_canvas.get_tk_widget()
-        self.win_id = self.scroll_canvas.create_window(
-            (0, 0), window=self.mpl_widget, anchor="nw")
+        self.fig = Figure()
+        self.mpl_canvas = FigureCanvasTkAgg(self.fig, master=right)
 
         toolbar_frame = ttk.Frame(right)
         toolbar_frame.pack(side=tk.TOP, fill=tk.X)
         NavigationToolbar2Tk(self.mpl_canvas, toolbar_frame)
 
-        vbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.scroll_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-        self.scroll_canvas.bind("<Configure>", self._on_container_resize)
-        # mouse-wheel scrolling (Linux uses Button-4/5)
-        for seq in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
-            self.scroll_canvas.bind_all(seq, self._on_wheel)
+        # fill=BOTH means the canvas takes the whole (fixed) pane; matplotlib
+        # divides that fixed area among the stacked subplots — no scrolling.
+        self.mpl_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH,
+                                             expand=True)
 
         self.refresh_files()
 
-    # -- file list --------------------------------------------------------- #
+        # -- file list --------------------------------------------------------- #
     def refresh_files(self):
         prev = set(self.selected_names())
         self.files = sorted(
@@ -154,28 +116,10 @@ class TimingGUI:
     def selected_names(self):
         return [self.files[i] for i in self.listbox.curselection()]
 
-        # -- scrolling / resize ------------------------------------------------ #
-    def _on_wheel(self, event):
-        if event.num == 4 or event.delta > 0:
-            self.scroll_canvas.yview_scroll(-1, "units")
-        elif event.num == 5 or event.delta < 0:
-            self.scroll_canvas.yview_scroll(1, "units")
-
-    def _on_container_resize(self, event):
-        # debounce: redraw shortly after the last resize event
-        if self._resize_job is not None:
-            self.root.after_cancel(self._resize_job)
-        self._resize_job = self.root.after(120, self.redraw)
-
     # -- plotting ---------------------------------------------------------- #
     def redraw(self):
-        self._resize_job = None
         names = self.selected_names()
         self.fig.clear()
-
-        avail_w = max(self.scroll_canvas.winfo_width(), 200)
-        avail_h = max(self.scroll_canvas.winfo_height(), 200)
-        w_in = avail_w / self.dpi
 
         if not names:
             ax = self.fig.add_subplot(111)
@@ -183,7 +127,6 @@ class TimingGUI:
                     ha="center", va="center", transform=ax.transAxes,
                     color="gray")
             ax.set_axis_off()
-            total_h = avail_h
         elif self.combine.get():
             ax = self.fig.add_subplot(111)
             for name in names:
@@ -193,11 +136,11 @@ class TimingGUI:
             ax.set_title(f"{len(names)} file(s) combined")
             ax.legend(fontsize=7)
             ax.grid(True, alpha=0.3)
-            total_h = avail_h
         else:
-            n = len(names)
-            total_h = max(n * self.per_plot_px, avail_h)
-            for idx, name in enumerate(names):
+            drawn = names[:MAX_PLOTS]          # cap simultaneous subplots
+            hidden = len(names) - len(drawn)
+            n = len(drawn)
+            for idx, name in enumerate(drawn):
                 ax = self.fig.add_subplot(n, 1, idx + 1)
                 self._plot_series(ax, name)
                 ax.set_title(name, fontsize=9)
@@ -205,16 +148,17 @@ class TimingGUI:
                 ax.grid(True, alpha=0.3)
                 if idx == n - 1:
                     ax.set_xlabel("sample index")
+            if hidden:
+                self.fig.suptitle(
+                    f"showing first {MAX_PLOTS} of {len(names)} selected "
+                    f"({hidden} hidden — use Combine, or deselect some)",
+                    fontsize=8, color="darkred")
 
-        self.fig.set_size_inches(w_in, total_h / self.dpi, forward=True)
         try:
             self.fig.tight_layout()
         except Exception:
             pass
-
         self.mpl_canvas.draw()
-        self.scroll_canvas.itemconfigure(self.win_id, width=avail_w)
-        self.scroll_canvas.configure(scrollregion=(0, 0, avail_w, total_h))
 
     def _plot_series(self, ax, name, label=None):
         path = os.path.join(self.folder, name)
@@ -232,29 +176,15 @@ class TimingGUI:
                     va="top", ha="left", fontsize=7,
                     bbox=dict(boxstyle="round", fc="white", alpha=0.7))
 
-
 def main():
     args = sys.argv[1:]
-    scale = detect_scale()
-    folder = None
-    i = 0
-    while i < len(args):
-        if args[i] in ("--scale", "-s") and i + 1 < len(args):
-            scale = float(args[i + 1])
-            i += 2
-        else:
-            folder = args[i]
-            i += 1
-
-    if folder is None:
-        folder = os.path.dirname(os.path.abspath(__file__))
+    folder = args[0] if args else os.path.dirname(os.path.abspath(__file__))
     if not os.path.isdir(folder):
         print(f"Not a directory: {folder}", file=sys.stderr)
         sys.exit(1)
 
     root = tk.Tk()
-    apply_widget_scaling(root, scale)
-    TimingGUI(root, folder, scale)
+    TimingGUI(root, folder)
     root.mainloop()
 
 
