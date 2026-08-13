@@ -1,5 +1,4 @@
 #include <hip/hip_runtime.h>
-#include "hip_utils.h"
 
 #include <vector>
 
@@ -8,7 +7,7 @@
 
 __global__ void matmul1d(const float* A, const float* B, float* C, uint M, uint N, uint K)
 {
-    int I = blockIdx.x * blockDim.x + threadIdx.x;
+    uint I = blockIdx.x * blockDim.x + threadIdx.x;
     const uint Size = M * N;
 
     if (I >= Size)
@@ -16,11 +15,11 @@ __global__ void matmul1d(const float* A, const float* B, float* C, uint M, uint 
         return;
     }
 
-    int Row = I / N;
-    int Col = I % N;
+    uint Row = I / N;
+    uint Col = I % N;
 
     float Acc = 0;
-    for (int i = 0; i < K; ++i)
+    for (uint i = 0; i < K; ++i)
     {
         float L = A[Row * K + i];
         float R = B[Col + (N * i)];
@@ -44,6 +43,6 @@ float MatMul1D(const FMatrix &A, const FMatrix &B, FMatrix &C, uint32_t BlockSiz
     HipCheck(hipGetLastError());
     auto Ms = Timer.Stop();
 
-    HipC.FromDevice(C.data(), C.SizeB());
+    HipC.FromDevice(C.GetData(), C.SizeB());
     return Ms;
 }

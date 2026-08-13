@@ -22,7 +22,7 @@ FMatrix CPUMatMul(const FMatrix& A, const FMatrix& B)
         {
             float Acc = 0.f;
 
-            for (int k = 0; k < K; ++k)
+            for (uint32_t k = 0; k < K; ++k)
             {
                 Acc += A.Data[i * K + k] * B.Data[k * N + j];
             }

@@ -8,8 +8,8 @@ struct FMatrix
 {
     explicit FMatrix(uint32_t MIn, uint32_t KIn, bool Empty);
     FMatrix(uint32_t MIn, uint32_t KIn, uint32_t Seed = 0, float Min = -20, float Max = 20);
-    void Print();
-    void PrintWolfram();
+    void Print() const;
+    void PrintWolfram() const;
     bool operator==(const FMatrix& Other) const;
     float AbsDiff(const FMatrix& Other) const;
     float RelDiff(const FMatrix& Other) const;
@@ -17,7 +17,7 @@ struct FMatrix
     uint32_t SizeB() const;
     FDeviceMemory<> ToDevice() const;
     FDeviceMemory<> AllocateGMem() const;
-    void* data();
+    void* GetData();
 
     uint32_t M;
     uint32_t K;

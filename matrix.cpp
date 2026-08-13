@@ -1,5 +1,6 @@
 #include <print>
 #include <random>
+#include <cassert>
 
 #include "matrix.h"
 
@@ -19,7 +20,7 @@ FMatrix::FMatrix(uint32_t MIn, uint32_t KIn,  uint32_t Seed, float Min, float Ma
     }
 }
 
-void FMatrix::Print()
+void FMatrix::Print() const
 {
     for (uint32_t i = 0; i < M; ++i)
     {
@@ -31,7 +32,7 @@ void FMatrix::Print()
     }
 }
 
-void FMatrix::PrintWolfram()
+void FMatrix::PrintWolfram() const
 {
     std::print("{{");
     for (uint32_t i = 0; i < M; ++i)
@@ -56,50 +57,34 @@ void FMatrix::PrintWolfram()
 
 bool FMatrix::operator==(const FMatrix& Other) const
 {
-    for (uint32_t i = 0; i < M; ++i)
-    {
-        for (uint32_t j = 0; j < K; ++j)
-        {
-            uint32_t Index = i * K + j;
-            if (Other.Data[Index] != Data[Index])
-            {
-                return false;
-            }
-        }
-    }
-    return true;
+    return M == Other.M && K == Other.K && Data == Other.Data;
 }
 
 float FMatrix::AbsDiff(const FMatrix& Other) const
 {
+    assert(M == Other.M && K == Other.K);
     float Diff = 0.f;
-    for (uint32_t i = 0; i < M; ++i)
-    {
-        for (uint32_t j = 0; j < K; ++j)
-        {
-            uint32_t Index = i * K + j;
-            Diff += std::abs(Other.Data[Index] - Data[Index]);
-        }
-    }
+
+    for (size_t i = 0; i < Data.size(); ++i)
+        Diff += std::abs(Other.Data[i] - Data[i]);
 
     return Diff;
 }
 
 float FMatrix::RelDiff(const FMatrix& Other) const
 {
+    assert(M == Other.M && K == Other.K);
+
     float Diff = 0.f;
     float Sum = 0.f;
-    for (uint32_t i = 0; i < M; ++i)
+
+    for (uint32_t i = 0; i < Data.size(); ++i)
     {
-        for (uint32_t j = 0; j < K; ++j)
-        {
-            uint32_t Index = i * K + j;
-            Diff += std::abs(Other.Data[Index] - Data[Index]);
-            Sum += std::abs(Data[Index]);
-        }
+        Diff += std::abs(Other.Data[i] - Data[i]);
+        Sum += std::abs(Data[i]);
     }
 
-    return Diff / Sum;
+    return Sum > 0.f ? Diff / Sum : Diff;
 }
 
 uint32_t FMatrix::Size() const
@@ -125,7 +110,7 @@ FDeviceMemory<> FMatrix::AllocateGMem() const
     return Memory;
 }
 
-void* FMatrix::data()
+void* FMatrix::GetData()
 {
     return Data.data();
 }
