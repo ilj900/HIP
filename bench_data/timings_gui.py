@@ -8,7 +8,6 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg,
-    NavigationToolbar2Tk,
 )
 
 MAGIC = b"TIM1"
@@ -31,12 +30,11 @@ def load_timings(path):
             raise ValueError(f"truncated: expected {count} floats, got {data.size}")
     return data
 
-    # --------------------------------------------------------------------------- #
-    # GUI
-    # --------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
+# GUI
+# --------------------------------------------------------------------------- #
 class TimingGUI:
     def __init__(self, root, folder):
-        self.root = root
         self.folder = folder
         self.files = []                       # list of filenames (basename)
 
@@ -84,19 +82,12 @@ class TimingGUI:
 
         self.fig = Figure()
         self.mpl_canvas = FigureCanvasTkAgg(self.fig, master=right)
-
-        toolbar_frame = ttk.Frame(right)
-        toolbar_frame.pack(side=tk.TOP, fill=tk.X)
-        NavigationToolbar2Tk(self.mpl_canvas, toolbar_frame)
-
-        # fill=BOTH means the canvas takes the whole (fixed) pane; matplotlib
-        # divides that fixed area among the stacked subplots — no scrolling.
         self.mpl_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH,
                                              expand=True)
 
         self.refresh_files()
 
-        # -- file list --------------------------------------------------------- #
+    # -- file list --------------------------------------------------------- #
     def refresh_files(self):
         prev = set(self.selected_names())
         self.files = sorted(
