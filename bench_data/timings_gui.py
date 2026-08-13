@@ -36,7 +36,8 @@ def load_timings(path):
 class TimingGUI:
     def __init__(self, root, folder):
         self.folder = folder
-        self.files = []                       # list of filenames (basename)
+        self.all_files = []                   # every *.dat on disk
+        self.files = []                       # currently displayed (filtered)
 
         root.title(f"Timing viewer — {folder}")
         root.geometry(f"{WIN_W}x{WIN_H}")
@@ -76,6 +77,15 @@ class TimingGUI:
         ttk.Button(btns, text="Select all", command=self.select_all).pack(
             side=tk.LEFT, expand=True, fill=tk.X)
 
+        # ---- filter box pinned to the bottom of the left pane --------------
+        self.filter_var = tk.StringVar()
+        filter_frame = ttk.Frame(left)
+        filter_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=(4, 0))
+        ttk.Label(filter_frame, text="Filter:").pack(side=tk.LEFT)
+        self.filter_entry = ttk.Entry(filter_frame, textvariable=self.filter_var)
+        self.filter_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.filter_var.trace_add("write", lambda *_: self.populate_list())
+
         # ---- right: single embedded figure that fills the fixed pane --------
         right = ttk.Frame(paned)
         paned.add(right, weight=1)
@@ -89,9 +99,14 @@ class TimingGUI:
 
     # -- file list --------------------------------------------------------- #
     def refresh_files(self):
-        prev = set(self.selected_names())
-        self.files = sorted(
+        self.all_files = sorted(
             f for f in os.listdir(self.folder) if f.endswith(".dat"))
+        self.populate_list()
+
+    def populate_list(self):
+        prev = set(self.selected_names())
+        needle = self.filter_var.get().strip().lower()
+        self.files = [f for f in self.all_files if needle in f.lower()]
         self.listbox.delete(0, tk.END)
         for f in self.files:
             self.listbox.insert(tk.END, f)
