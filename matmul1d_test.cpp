@@ -7,13 +7,6 @@
 
 std::filesystem::path BenchPath = "bench_data";
 
-struct FShape
-{
-    uint32_t M;
-    uint32_t N;
-    uint32_t K;
-};
-
 // M x K x N
 constexpr std::array ValidationShapes =
 {
@@ -57,50 +50,36 @@ constexpr std::array BlockSizes1D =
     1024u
 };
 
-class MatmulVerificator : public ::testing::TestWithParam<FShape>
-{};
+class Matmul1DSanity : public ::testing::TestWithParam<FShape>
+{
+public:
+    static constexpr uint32_t BlockSize = 256;
+};
 
 class Matmul1DBench : public ::testing::TestWithParam<std::tuple<FShape, uint32_t>>
 {};
 
 std::string GetName1D(const FShape& Shape, uint32_t BlockSize)
 {
-    return std::format("GroupSize_{}_{}x{}x{}", BlockSize, Shape.M, Shape.N, Shape.K);
+    return std::format("Matmul1D_GroupSize_{}_Shape_{}x{}x{}", BlockSize, Shape.M, Shape.N, Shape.K);
 }
 
-TEST(matmul, ReturnsSuccess)
+TEST(matmul, SmokeTest)
 {
-    FMatrix A(3, 3);
-    FMatrix B(3, 3, 1u);
-    FMatrix C(3, 3, true);
-    MatMul1D(A, B, C, 4);
-    A.PrintWolfram();
-    std::println();
-    B.PrintWolfram();
-    std::println();
-    C.Print();
-    std::println();
+    FMatrix A(13, 17);
+    FMatrix B(17, 19, 1u);
+    FMatrix C(13, 19, true);
+    MatMul1D(A, B, C, 16);
     auto D = CPUMatMul(A, B);
-    D.Print();
-    std::println();
     std::println("AbsDiff: {}", C.AbsDiff(D));
     std::println("RelDiff: {}", C.RelDiff(D));
     ASSERT_LE(C.RelDiff(D), 1e-6);
 }
 
-TEST(Sanity, MatGen)
-{
-    FMatrix A(10, 10);
-    A.Print();
-}
-
-TEST_P(Matmul1DBench, Bench1D)
+TEST_P(Matmul1DBench, Bench)
 {
     auto [Shape, BlockSize] = GetParam();
-
-    auto& M = Shape.M;
-    auto& N = Shape.N;
-    auto& K = Shape.K;
+    auto& [M, N, K] = Shape;
     auto Name = GetName1D(Shape, BlockSize);
 
     std::println("Bench 1D: {}", Name);
@@ -109,7 +88,7 @@ TEST_P(Matmul1DBench, Bench1D)
     FMatrix B(K, N);
     FMatrix C(M, N, true);
 
-    uint32_t Runs = 5;
+    uint32_t Runs = 100;
     std::vector<float> Values(Runs);
     for (int i = 0; i < Runs; ++i)
     {
@@ -120,20 +99,17 @@ TEST_P(Matmul1DBench, Bench1D)
     std::println("{}ms\n", Values.back());
 }
 
-TEST_P(MatmulVerificator, TestCorrectness)
+TEST_P(Matmul1DSanity, Sanity)
 {
     auto Shape = GetParam();
+    auto& [M, N, K] = Shape;
 
-    auto& M = Shape.M;
-    auto& N = Shape.N;
-    auto& K = Shape.K;
-
-    std::println("Validation: {}", GetName1D(Shape, 256));
+    std::println("Sanity: {}", GetName1D(Shape, BlockSize));
 
     FMatrix A(M, K);
     FMatrix B(K, N);
     FMatrix C(M, N, true);
-    MatMul1D(A, B, C, 256);
+    MatMul1D(A, B, C, BlockSize);
     auto D = CPUMatMul(A, B);
     std::println("AbsDiff: {}", C.AbsDiff(D));
     std::println("RelDiff: {}", C.RelDiff(D));
@@ -141,17 +117,17 @@ TEST_P(MatmulVerificator, TestCorrectness)
     ASSERT_LE(C.RelDiff(D), 1e-6);
 }
 
-INSTANTIATE_TEST_SUITE_P(VerificationTest, MatmulVerificator, ::testing::ValuesIn(ValidationShapes),
-    [](const ::testing::TestParamInfo<FShape>& Info)
+INSTANTIATE_TEST_SUITE_P(, Matmul1DSanity, ::testing::ValuesIn(ValidationShapes),
+[](const ::testing::TestParamInfo<FShape>& Info)
 {
         const auto& S = Info.param;
-        return std::format("Validation_K{}", GetName1D(S, 256));
+        return std::format("Sanity_{}", GetName1D(S, Matmul1DSanity::BlockSize));
 });
 
-INSTANTIATE_TEST_SUITE_P(Bench1DTest, Matmul1DBench, ::testing::Combine(::testing::ValuesIn(BenchShapes), ::testing::ValuesIn(BlockSizes1D)),
+INSTANTIATE_TEST_SUITE_P(, Matmul1DBench, ::testing::Combine(::testing::ValuesIn(BenchShapes), ::testing::ValuesIn(BlockSizes1D)),
     [](const ::testing::TestParamInfo<std::tuple<FShape, uint32_t>>& Info)
 {
         const auto& S = std::get<0>(Info.param);
         const auto  B = std::get<1>(Info.param);
-        return std::format("Bench1D_{}", GetName1D(S, B));
+        return std::format("Bench_{}", GetName1D(S, B));
 });

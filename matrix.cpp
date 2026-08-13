@@ -114,8 +114,14 @@ uint32_t FMatrix::SizeB() const
 
 FDeviceMemory<> FMatrix::ToDevice() const
 {
-    FDeviceMemory<> Memory(Data.size());
+    FDeviceMemory Memory(Data.size());
     Memory.ToDevice(Data.data(), SizeB());
+    return Memory;
+}
+
+FDeviceMemory<> FMatrix::AllocateGMem() const
+{
+    FDeviceMemory Memory(Data.size());
     return Memory;
 }
 

@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "hip_utils.h"
 #include "matmul.h"
 
 __global__ void matmul1d(const float* A, const float* B, float* C, uint M, uint N, uint K)
@@ -32,7 +33,7 @@ float MatMul1D(const FMatrix &A, const FMatrix &B, FMatrix &C, uint32_t BlockSiz
 {
     auto HipA = A.ToDevice();
     auto HipB = B.ToDevice();
-    auto HipC = C.ToDevice();
+    auto HipC = C.AllocateGMem();
     uint32_t M = C.M;
     uint32_t N = C.K;
     uint32_t K = A.K;
@@ -40,6 +41,7 @@ float MatMul1D(const FMatrix &A, const FMatrix &B, FMatrix &C, uint32_t BlockSiz
     FHipTimer Timer;
     Timer.Start();
     matmul1d<<<(C.Size() + BlockSize - 1) / BlockSize, BlockSize>>>(HipA.Data, HipB.Data, HipC.Data, M, N, K);
+    HipCheck(hipGetLastError());
     auto Ms = Timer.Stop();
 
     HipC.FromDevice(C.data(), C.SizeB());

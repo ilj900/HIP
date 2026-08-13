@@ -16,6 +16,7 @@ struct FMatrix
     uint32_t Size() const;
     uint32_t SizeB() const;
     FDeviceMemory<> ToDevice() const;
+    FDeviceMemory<> AllocateGMem() const;
     void* data();
 
     uint32_t M;
