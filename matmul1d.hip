@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "hip_utils.h"
-#include "matmul.h"
+#include "matmul1d.h"
 
 __global__ void matmul1d(const float* A, const float* B, float* C, uint M, uint N, uint K)
 {

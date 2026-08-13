@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <print>
 #include "matrix.h"
-#include "matmul.h"
+#include "matmul1d.h"
 #include "utils.h"
 #include <array>
 
