@@ -7,6 +7,9 @@ include(cmake/gtest.cmake)
 
 FetchContent_MakeAvailable(googletest)
 
+include(GoogleTest)
+enable_testing()
+
 file(GLOB SOURCES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/*.hip")

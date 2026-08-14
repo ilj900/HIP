@@ -98,7 +98,7 @@ TEST_P(Matmul2DBench, Bench)
     FMatrix B(K, N);
     FMatrix C(M, N, true);
 
-    uint32_t Runs = 100;
+    uint32_t Runs = 3;
     std::vector<float> Values(Runs);
     for (int i = 0; i < Runs; ++i)
     {
@@ -109,7 +109,7 @@ TEST_P(Matmul2DBench, Bench)
     std::println("{}ms\n", Values.back());
 }
 
-INSTANTIATE_TEST_SUITE_P(, Matmul2DSanity, ::testing::Combine(::testing::ValuesIn(ValidationShapes), ::testing::ValuesIn(BlockSizes2D)),
+INSTANTIATE_TEST_SUITE_P(Matmul, Matmul2DSanity, ::testing::Combine(::testing::ValuesIn(ValidationShapes), ::testing::ValuesIn(BlockSizes2D)),
     [](const ::testing::TestParamInfo<std::tuple<FShape, FTile>>& Info)
 {
     const auto& S = std::get<0>(Info.param);
@@ -117,10 +117,10 @@ INSTANTIATE_TEST_SUITE_P(, Matmul2DSanity, ::testing::Combine(::testing::ValuesI
     return std::format("Sanity_{}", GetName2D(S, T));
 });
 
-INSTANTIATE_TEST_SUITE_P(, Matmul2DBench, ::testing::Combine(::testing::ValuesIn(BenchShapes), ::testing::ValuesIn(BlockSizes2D)),
+INSTANTIATE_TEST_SUITE_P(Matmul, Matmul2DBench, ::testing::Combine(::testing::ValuesIn(BenchShapes), ::testing::ValuesIn(BlockSizes2D)),
     [](const ::testing::TestParamInfo<std::tuple<FShape, FTile>>& Info)
 {
-        const auto& S = std::get<0>(Info.param);
-        const auto  T = std::get<1>(Info.param);
-        return std::format("Bench_{}", GetName2D(S, T));
+    const auto& S = std::get<0>(Info.param);
+    const auto  T = std::get<1>(Info.param);
+    return std::format("Bench_{}", GetName2D(S, T));
 });

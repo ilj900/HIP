@@ -120,14 +120,14 @@ TEST_P(Matmul1DBench, Bench)
     std::println("{}ms\n", Values.back());
 }
 
-INSTANTIATE_TEST_SUITE_P(, Matmul1DSanity, ::testing::ValuesIn(ValidationShapes),
+INSTANTIATE_TEST_SUITE_P(Matmul, Matmul1DSanity, ::testing::ValuesIn(ValidationShapes),
 [](const ::testing::TestParamInfo<FShape>& Info)
 {
         const auto& S = Info.param;
         return std::format("Sanity_{}", GetName1D(S, Matmul1DSanity::BlockSize));
 });
 
-INSTANTIATE_TEST_SUITE_P(, Matmul1DBench, ::testing::Combine(::testing::ValuesIn(BenchShapes), ::testing::ValuesIn(BlockSizes1D)),
+INSTANTIATE_TEST_SUITE_P(Matmul, Matmul1DBench, ::testing::Combine(::testing::ValuesIn(BenchShapes), ::testing::ValuesIn(BlockSizes1D)),
     [](const ::testing::TestParamInfo<std::tuple<FShape, uint32_t>>& Info)
 {
         const auto& S = std::get<0>(Info.param);
