@@ -5,7 +5,10 @@
 #include "utils.h"
 #include <array>
 
-std::filesystem::path BenchPath = "bench_data";
+namespace
+{
+    std::filesystem::path BenchPath = "bench_data";
+}
 
 // M x K x N
 constexpr std::array ValidationShapes =
@@ -76,6 +79,24 @@ TEST(matmul, SmokeTest)
     ASSERT_LE(C.RelDiff(D), 1e-6);
 }
 
+TEST_P(Matmul1DSanity, Sanity)
+{
+    auto Shape = GetParam();
+    auto& [M, N, K] = Shape;
+
+    std::println("Sanity: {}", GetName1D(Shape, BlockSize));
+
+    FMatrix A(M, K);
+    FMatrix B(K, N);
+    FMatrix C = FMatrix::Zeros(M, N);
+    MatMul1D(A, B, C, BlockSize);
+    auto D = CPUMatMul(A, B);
+    std::println("AbsDiff: {}", C.AbsDiff(D));
+    std::println("RelDiff: {}", C.RelDiff(D));
+    std::println();
+    ASSERT_LE(C.RelDiff(D), 1e-6);
+}
+
 TEST_P(Matmul1DBench, Bench)
 {
     auto [Shape, BlockSize] = GetParam();
@@ -97,24 +118,6 @@ TEST_P(Matmul1DBench, Bench)
 
     SaveTimings(Values, BenchPath / ("Bench1D" + Name + ".dat"));
     std::println("{}ms\n", Values.back());
-}
-
-TEST_P(Matmul1DSanity, Sanity)
-{
-    auto Shape = GetParam();
-    auto& [M, N, K] = Shape;
-
-    std::println("Sanity: {}", GetName1D(Shape, BlockSize));
-
-    FMatrix A(M, K);
-    FMatrix B(K, N);
-    FMatrix C = FMatrix::Zeros(M, N);
-    MatMul1D(A, B, C, BlockSize);
-    auto D = CPUMatMul(A, B);
-    std::println("AbsDiff: {}", C.AbsDiff(D));
-    std::println("RelDiff: {}", C.RelDiff(D));
-    std::println();
-    ASSERT_LE(C.RelDiff(D), 1e-6);
 }
 
 INSTANTIATE_TEST_SUITE_P(, Matmul1DSanity, ::testing::ValuesIn(ValidationShapes),

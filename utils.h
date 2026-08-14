@@ -11,6 +11,12 @@ struct FShape
     uint32_t K;
 };
 
+struct FTile
+{
+    uint32_t X;
+    uint32_t Y;
+};
+
 FMatrix CPUMatMul(const FMatrix& A, const FMatrix& B);
 
 void SaveTimings(const std::vector<float>& Timings, const std::filesystem::path& FilePath);
