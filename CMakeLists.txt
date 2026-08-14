@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 23)
 include(cmake/gtest.cmake)
 
 FetchContent_MakeAvailable(googletest)
+find_package(rocblas REQUIRED)
 
 include(GoogleTest)
 enable_testing()
@@ -16,4 +17,4 @@ file(GLOB SOURCES CONFIGURE_DEPENDS
 
 add_executable(Playground ${SOURCES})
 
-target_link_libraries(Playground GTest::gtest)
+target_link_libraries(Playground GTest::gtest roc::rocblas)

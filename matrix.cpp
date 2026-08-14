@@ -64,20 +64,20 @@ bool FMatrix::operator==(const FMatrix& Other) const
 float FMatrix::AbsDiff(const FMatrix& Other) const
 {
     assert(M == Other.M && K == Other.K);
-    float Diff = 0.f;
+    double Diff = 0.f;
 
     for (size_t i = 0; i < Data.size(); ++i)
         Diff += std::abs(Other.Data[i] - Data[i]);
 
-    return Diff;
+    return static_cast<float>(Diff);
 }
 
 float FMatrix::RelDiff(const FMatrix& Other) const
 {
     assert(M == Other.M && K == Other.K);
 
-    float Diff = 0.f;
-    float Sum = 0.f;
+    double Diff = 0.f;
+    double Sum = 0.f;
 
     for (uint32_t i = 0; i < Data.size(); ++i)
     {
@@ -85,7 +85,7 @@ float FMatrix::RelDiff(const FMatrix& Other) const
         Sum += std::abs(Data[i]);
     }
 
-    return Sum > 0.f ? Diff / Sum : Diff;
+    return Sum > 0.f ? static_cast<float>(Diff / Sum) : static_cast<float>(Diff);
 }
 
 uint32_t FMatrix::Size() const
