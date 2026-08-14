@@ -4,6 +4,7 @@
 #include <source_location>
 
 void HipCheck(uint32_t Status, std::source_location Location = std::source_location::current());
+void PrintInfo();
 void* HipAlloc(uint32_t SizeInBytes);
 void HipFree(void* Data);
 void CopyFromDevice(const void* DeviceM, void* HostM, uint32_t Size);

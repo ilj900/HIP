@@ -49,7 +49,12 @@ constexpr std::array BenchShapes =
 constexpr std::array BlockSizes2D =
 {
     FTile{256, 1},
+    FTile{1, 256},
+    FTile{16, 16},
     FTile{32, 32},
+    FTile{64, 16},
+    FTile{64, 4},
+    FTile{8, 8},
     FTile{17, 17},
 };
 
@@ -98,7 +103,7 @@ TEST_P(Matmul2DBench, Bench)
     FMatrix B(K, N);
     FMatrix C(M, N, true);
 
-    uint32_t Runs = 3;
+    uint32_t Runs = 50;
     std::vector<float> Values(Runs);
     for (int i = 0; i < Runs; ++i)
     {

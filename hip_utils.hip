@@ -6,16 +6,23 @@
 #include "hip_utils.h"
 
 void HipCheck(uint32_t Status, std::source_location Location)
-  {
-      if (Status != hipSuccess)
-      {
-          auto Err = static_cast<hipError_t>(Status);
-          throw std::runtime_error(std::format(
-              "HIP error {} ({}) at {}:{} in `{}`",
-              Status, hipGetErrorString(Err),
-              Location.file_name(), Location.line(), Location.function_name()));
-      }
-  }
+{
+    if (Status != hipSuccess)
+    {
+        auto Err = static_cast<hipError_t>(Status);
+        throw std::runtime_error(std::format(
+            "HIP error {} ({}) at {}:{} in `{}`",
+            Status, hipGetErrorString(Err),
+            Location.file_name(), Location.line(), Location.function_name()));
+    }
+}
+
+void PrintInfo()
+{
+    hipDeviceProp_t prop;
+    HipCheck(hipGetDeviceProperties(&prop, 0));
+    printf("warpSize = %d\n", prop.warpSize);
+}
 
 void* HipAlloc(uint32_t SizeInBytes)
 {

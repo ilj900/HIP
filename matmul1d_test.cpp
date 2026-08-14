@@ -79,6 +79,11 @@ TEST(matmul, SmokeTest)
     ASSERT_LE(C.RelDiff(D), 1e-6);
 }
 
+TEST(Info, GPUINfo)
+{
+    PrintInfo();
+}
+
 TEST_P(Matmul1DSanity, Sanity)
 {
     auto Shape = GetParam();
@@ -109,7 +114,7 @@ TEST_P(Matmul1DBench, Bench)
     FMatrix B(K, N);
     FMatrix C(M, N, true);
 
-    uint32_t Runs = 100;
+    uint32_t Runs = 50;
     std::vector<float> Values(Runs);
     for (int i = 0; i < Runs; ++i)
     {
