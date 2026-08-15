@@ -101,7 +101,7 @@ TEST_P(Matmul2DBench, Bench)
 
     FMatrix A(M, K);
     FMatrix B(K, N);
-    FMatrix C(M, N, true);
+    FMatrix C = FMatrix::Zeros(M, N);
 
     uint32_t Runs = 50;
     std::vector<float> Values(Runs);
