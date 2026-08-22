@@ -1,8 +1,10 @@
+#include "matmul_blocktile_1d.h"
+
 #include <gtest/gtest.h>
 #include <print>
 #include "matrix.h"
 #include "matmul2d.h"
-#include "matmul_smem.h"
+#include "matmul_blocktile_1d.h"
 #include "utils.h"
 #include <array>
 
@@ -46,38 +48,43 @@ constexpr std::array BenchShapes =
     FShape{32, 4096, 4096},
 };
 
-constexpr std::array BlockSizes2D =
+constexpr std::array BlockTileSizes1D =
 {
-    FTile{8, 8},
-    FTile{16, 16},
-    FTile{32, 32},
+    F1DBlockTilingConfig{64, 64, 8, 8},
+    F1DBlockTilingConfig{64, 64, 8, 16},
+    F1DBlockTilingConfig{64, 64, 8, 32},
 };
 
-class MatmulSMEMSanity : public ::testing::TestWithParam<std::tuple<FShape, FTile>>
-{};
-
-class MatmulSMEMBench : public ::testing::TestWithParam<std::tuple<FShape, FTile>>
-{};
-
-std::string GetNameSMEM(const FShape& Shape, const FTile& Tile)
+class Matmul1DBlockTilingSanity : public ::testing::TestWithParam<std::tuple<FShape, F1DBlockTilingConfig>>
 {
-    return std::format("MatmulSMEM_TileSize_{}x{}_Shape_{}x{}x{}", Tile.X, Tile.Y, Shape.M, Shape.N, Shape.K);
+public:
+    static constexpr FTile TileSize = {64, 4};
+};
+
+class Matmul1DBlockTilingBench : public ::testing::TestWithParam<std::tuple<FShape, F1DBlockTilingConfig>>
+{};
+
+std::string GetName1DBlockTiling(const FShape& Shape, const F1DBlockTilingConfig& Params)
+{
+    return std::format("MatmulBlokTile_BlockDims_{}x{}_{}_TM_{}_Shape_{}x{}x{}",
+        Params.BM, Params.BN, Params.BK, Params.TM, Shape.M, Shape.N, Shape.K);
 }
 
-TEST_P(MatmulSMEMSanity, Sanity)
+TEST_P(Matmul1DBlockTilingSanity, Sanity)
 {
     auto [Shape, Tile] = GetParam();
     auto& [M, N, K] = Shape;
+    auto& [BM, BN, BK, TM] = Tile;
 
-    std::println("Sanity: {}", GetNameSMEM(Shape, Tile));
+    std::println("Sanity: {}", GetName1DBlockTiling(Shape, Tile));
 
     FMatrix A(M, K);
     FMatrix B(K, N);
     FMatrix C = FMatrix::Zeros(M, N);
     FMatrix D = FMatrix::Zeros(M, N);
-    auto Time1 = MatMulSMEM(A, B, C, Tile);
-    auto Time2 = MatMul2D(A, B, D, Tile);
-    std::println("MatMulSMEM time: {}", Time1);
+    auto Time1 = MatMulBlockTile1D(A, B, C, BM, BN, BK, TM);
+    auto Time2 = MatMul2D(A, B, D, TileSize);
+    std::println("MatMulBlockTile1D time: {}", Time1);
     std::println("MatMul2D time: {}", Time2);
     std::println("AbsDiff: {}", C.AbsDiff(D));
     std::println("RelDiff: {}", C.RelDiff(D));
@@ -85,11 +92,12 @@ TEST_P(MatmulSMEMSanity, Sanity)
     ASSERT_LE(C.RelDiff(D), 1e-6);
 }
 
-TEST_P(MatmulSMEMBench, Bench)
+TEST_P(Matmul1DBlockTilingBench, Bench)
 {
     auto [Shape, Tile] = GetParam();
     auto& [M, N, K] = Shape;
-    auto Name = GetNameSMEM(Shape, Tile);
+    auto& [BM, BN, BK, TM] = Tile;
+    auto Name = GetName1DBlockTiling(Shape, Tile);
 
     std::println("Bench: {}", Name);
 
@@ -101,25 +109,25 @@ TEST_P(MatmulSMEMBench, Bench)
     std::vector<float> Values(Runs);
     for (int i = 0; i < Runs; ++i)
     {
-        Values[i] = MatMulSMEM(A, B, C, Tile);
+        Values[i] = MatMulBlockTile1D(A, B, C, BM, BN, BK, TM);
     }
 
     SaveTimings(Values, BenchPath / ("Bench" + Name + ".dat"));
     std::println("{}ms\n", Values.back());
 }
 
-INSTANTIATE_TEST_SUITE_P(Matmul, MatmulSMEMSanity, ::testing::Combine(::testing::ValuesIn(ValidationShapes), ::testing::ValuesIn(BlockSizes2D)),
-    [](const ::testing::TestParamInfo<std::tuple<FShape, FTile>>& Info)
+INSTANTIATE_TEST_SUITE_P(Matmul, Matmul1DBlockTilingSanity, ::testing::Combine(::testing::ValuesIn(ValidationShapes), ::testing::ValuesIn(BlockTileSizes1D)),
+    [](const ::testing::TestParamInfo<std::tuple<FShape, F1DBlockTilingConfig>>& Info)
 {
     const auto& S = std::get<0>(Info.param);
     const auto& T = std::get<1>(Info.param);
-    return std::format("Sanity_{}", GetNameSMEM(S, T));
+    return std::format("Sanity_{}", GetName1DBlockTiling(S, T));
 });
 
-INSTANTIATE_TEST_SUITE_P(Matmul, MatmulSMEMBench, ::testing::Combine(::testing::ValuesIn(BenchShapes), ::testing::ValuesIn(BlockSizes2D)),
-    [](const ::testing::TestParamInfo<std::tuple<FShape, FTile>>& Info)
+INSTANTIATE_TEST_SUITE_P(Matmul, Matmul1DBlockTilingBench, ::testing::Combine(::testing::ValuesIn(BenchShapes), ::testing::ValuesIn(BlockTileSizes1D)),
+    [](const ::testing::TestParamInfo<std::tuple<FShape, F1DBlockTilingConfig>>& Info)
 {
     const auto& S = std::get<0>(Info.param);
     const auto  T = std::get<1>(Info.param);
-    return std::format("Bench_{}", GetNameSMEM(S, T));
+    return std::format("Bench_{}", GetName1DBlockTiling(S, T));
 });
